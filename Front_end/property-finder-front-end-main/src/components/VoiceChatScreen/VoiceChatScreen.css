@@ -1,157 +1,12 @@
-/* === Main wrapper for the voice chat screen === */
 .voice-chat-screen {
   height: 100vh;
-  background: linear-gradient(135deg, #fff3e0, #ffe0b2); /* Soft warm background */
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 40px 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* === Heading text === */
-.voice-chat-screen h2 {
-  font-size: 1.8rem;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-/* === Chat box area === */
-.chat-box {
-  background-color: white;
-  width: 100%;
-  max-width: 500px;
-  min-height: 300px;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
-  margin-bottom: 30px;
-}
-
-/* === Message style for bot === */
-.bot-message {
-  background-color: #e1f5fe;
-  color: #333;
-  padding: 12px 16px;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  font-size: 1rem;
-}
-
-/* === End chat button === */
-.end-button {
-  padding: 12px 30px;
-  font-size: 1.1rem;
-  background-color: #d32f2f;
-  color: white;
-  border: none;
-  border-radius: 25px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.end-button:hover {
-  background-color: #b71c1c;
-  transform: scale(1.05);
-}
-
-
-/* === Fullscreen container for the Voice Chat screen === */
-.voice-chat-screen {
-  height: 100vh; /* Take full vertical space */
-  display: flex; /* Use flexbox layout */
-  flex-direction: column; /* Stack items vertically */
-  justify-content: center; /* Center vertically */
-  align-items: center; /* Center horizontally */
-  background: linear-gradient(135deg, #fff3e0, #ffe0b2); /* Warm orange gradient background */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Clean, readable font */
-  color: #333; /* Dark gray text for contrast */
-  text-align: center; /* Center text inside elements */
-  padding: 20px; /* Some spacing on smaller screens */
-}
-
-/* === Heading text style === */
-.voice-chat-screen h2 {
-  font-size: 2rem; /* Slightly smaller than welcome */
-  margin-bottom: 30px;
-}
-
-/* === Box that holds the bot’s status (listening/replying) === */
-.chat-container {
-  width: 400px;
-  height: 200px;
-  background-color: white; /* White chat box */
-  border-radius: 12px; /* Rounded corners */
-  padding: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 40px;
-}
-
-/* === Text inside the chat box indicating bot status === */
-.bot-response {
-  font-size: 1.2rem;
-  color: #444; /* Slightly darker gray */
-}
-
-/* === End Chat button styling === */
-.end-chat-button {
-  padding: 12px 30px;
-  font-size: 1rem;
-  background-color: #e53935; /* Bold red */
-  color: white;
-  border: none;
-  border-radius: 25px; /* Pill shape */
-  cursor: pointer;
-  box-shadow: 0 6px 16px rgba(229, 57, 53, 0.3); /* Red soft glow */
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-/* === Hover effect for end chat button === */
-.end-chat-button:hover {
-  background-color: #b71c1c; /* Darker red */
-  transform: scale(1.05); /* Slightly zoom on hover */
-}
-
-.mic-toggle {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 20px;
-}
-
-.mic-button {
-  background-color: #fff;
-  border: 2px solid #007bff;
-  border-radius: 50%;
-  padding: 20px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.mic-button.recording {
-  background-color: #ff4d4d;
-  color: white;
-}
-
-.mic-status {
-  margin-top: 10px;
-  font-size: 14px;
-  color: #666;
-}
-
-.voice-chat-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 2rem;
-  min-height: 100vh;
-  background-color: #f7f8fc;
+  background: linear-gradient(135deg, #f3f4f6, #e2e8f0);
   transition: filter 0.3s ease, opacity 0.3s ease;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .voice-chat-screen.blur-background {
@@ -161,40 +16,88 @@
 }
 
 .chat-header h2 {
-  font-size: 1.8rem;
+  font-size: 2rem;
   margin-bottom: 0.5rem;
+  color: #2d3748;
 }
 
 .chat-subtitle {
   font-size: 1rem;
-  color: #666;
+  color: #718096;
 }
 
 .chat-container {
   margin-top: 2rem;
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   text-align: center;
+  width: 400px;
+  position: relative;
 }
 
 .bot-response {
   font-size: 1.1rem;
   margin-bottom: 1rem;
+  color: #333;
+  transition: all 0.3s ease-in-out;
 }
 
-.wave-animation {
-  width: 40px;
-  height: 40px;
+/* 🎧 Listening animation */
+.listening-animation {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.listening-animation .dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: rgba(0, 123, 255, 0.3);
-  animation: pulse 1s infinite;
-  margin: 10px auto;
+  background-color: #007bff;
+  animation: pulse 1s infinite ease-in-out;
+}
+
+.listening-animation .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.listening-animation .dot:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.4); opacity: 0.3; }
-  100% { transform: scale(1); opacity: 0.7; }
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.5); opacity: 1; }
 }
 
+/* 🔊 Speaking animation */
+.speaking-animation {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 15px;
+}
+
+.speaking-animation .bar {
+  width: 4px;
+  height: 20px;
+  background-color: #28a745;
+  animation: bounce 1s infinite;
+}
+
+.speaking-animation .bar:nth-child(1) { animation-delay: 0s; }
+.speaking-animation .bar:nth-child(2) { animation-delay: 0.1s; }
+.speaking-animation .bar:nth-child(3) { animation-delay: 0.2s; }
+.speaking-animation .bar:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes bounce {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(2.5); }
+}
+
+/* 🎙️ Mic area */
 .mic-toggle {
   display: flex;
   flex-direction: column;
@@ -226,12 +129,23 @@
   color: #666;
 }
 
+/* ⚠️ Error */
+.error-message {
+  color: red;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* 📍 Footer */
 .footer-note {
   margin-top: auto;
   padding: 1rem;
   color: #999;
 }
 
+/* 🔚 End Chat */
 .end-chat-button {
   margin-top: 2rem;
   background-color: #007bff;
@@ -241,12 +155,11 @@
   font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.2);
 }
 
-.error-message {
-  color: red;
-  font-weight: bold;
-  margin-top: 10px;
-  font-size: 0.95rem;
-  text-align: center;
+.end-chat-button:hover {
+  background-color: #0056b3;
+  transform: scale(1.05);
 }

@@ -1,45 +1,160 @@
 /* === Main container for the Begin Chat screen === */
 .begin-chat-screen {
-  height: 100vh; /* Full screen height */
-  display: flex; /* Flexbox layout */
-  flex-direction: column; /* Stack children vertically */
-  justify-content: center; /* Center vertically */
-  align-items: center; /* Center horizontally */
-  background: linear-gradient(135deg, #e0f7fa, #e1bee7); /* Beautiful gradient background */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Clean modern font */
-  color: #333; /* Dark text color */
-  text-align: center; /* Center align all text */
-  padding: 20px; /* Some breathing room on mobile */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(-45deg, #f0f0f0, #dcdcdc, #eeeeee, #e5e5e5);
+  background-size: 400% 400%;
+  animation: gradientShift 18s ease infinite;
+  text-align: center;
+  padding: 20px;
+  color: #333;
 }
 
-/* === Main heading style === */
+/* === Animated background gradient === */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* === Faded logo in background === */
+.begin-chat-screen::before {
+  content: '';
+  background: url('./ai-logo.jpg') no-repeat center center;
+  background-size: 350px;
+  opacity: 0.03;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* === Floating circles for subtle animation === */
+.floating-icon {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(100, 100, 100, 0.05);
+  animation: float 12s infinite ease-in-out;
+  z-index: 0;
+}
+
+.floating-icon:nth-child(1) {
+  width: 160px;
+  height: 160px;
+  top: 15%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.floating-icon:nth-child(2) {
+  width: 120px;
+  height: 120px;
+  bottom: 18%;
+  right: 12%;
+  animation-delay: 3s;
+}
+
+.floating-icon:nth-child(3) {
+  width: 200px;
+  height: 200px;
+  top: 25%;
+  right: 22%;
+  animation-delay: 6s;
+}
+
+@keyframes float {
+  0% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(180deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+
+/* === Main heading === */
 .begin-chat-screen h1 {
-  font-size: 2.5rem; /* Large heading */
-  margin-bottom: 10px;
+  font-size: 2.8rem;
+  margin-bottom: 12px;
+  color: #444;
+  z-index: 1;
+  animation: fadeInUp 1.5s ease-out;
 }
 
-/* === Subtext / description below the heading === */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === Subtext description === */
 .begin-chat-screen p {
   font-size: 1.2rem;
-  margin-bottom: 30px;
-  color: #555; /* Softer grey for less emphasis */
+  color: #555;
+  margin-bottom: 35px;
+  animation: typing 3s steps(50, end), blink 0.75s step-end infinite;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 3px solid #999;
+  width: 0;
+  animation-fill-mode: forwards;
+  z-index: 1;
 }
 
-/* === The big “Begin Chat” button === */
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  0%, 100% { border-color: transparent }
+  50% { border-color: #999 }
+}
+
+/* === Begin Chat button === */
 .start-button {
-  padding: 15px 40px; /* Bigger click area */
-  font-size: 1.2rem; /* Readable on all screens */
-  background-color: #6200ea; /* Deep purple */
+  padding: 15px 40px;
+  font-size: 1.1rem;
+  background: linear-gradient(135deg, #666, #aaa);
   color: white;
   border: none;
-  border-radius: 30px; /* Rounded button (pill style) */
+  border-radius: 40px;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Soft drop shadow */
-  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover effects */
+  box-shadow: 0 8px 20px rgba(100, 100, 100, 0.2);
+  transition: all 0.3s ease;
+  z-index: 1;
+  position: relative;
+  overflow: hidden;
 }
 
-/* === Hover effect for the button === */
 .start-button:hover {
-  background-color: #3700b3; /* Darker purple on hover */
-  transform: scale(1.05); /* Slight zoom effect */
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #444, #999);
+  box-shadow: 0 10px 25px rgba(80, 80, 80, 0.3);
+}
+
+/* === Button subtle pulse === */
+.start-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+  animation: pulse 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 1; }
+  70% { transform: scale(1); opacity: 0; }
+  100% { transform: scale(0.9); opacity: 1; }
 }
