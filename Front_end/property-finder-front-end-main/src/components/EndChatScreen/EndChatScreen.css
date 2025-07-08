@@ -1,0 +1,39 @@
+/* EndChatScreen.css */
+
+.end-chat-screen {
+  text-align: center;
+  padding: 30px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
+}
+
+.user-summary {
+  background: white;
+  margin: 20px auto;
+  padding: 20px;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
+.user-summary p {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.restart-button {
+  padding: 10px 25px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 20px;
+  cursor: pointer;
+}
+
+.restart-button:hover {
+  background-color: #0056b3;
+}

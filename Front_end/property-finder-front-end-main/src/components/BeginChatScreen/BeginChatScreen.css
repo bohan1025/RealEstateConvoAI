@@ -1,0 +1,45 @@
+/* === Main container for the Begin Chat screen === */
+.begin-chat-screen {
+  height: 100vh; /* Full screen height */
+  display: flex; /* Flexbox layout */
+  flex-direction: column; /* Stack children vertically */
+  justify-content: center; /* Center vertically */
+  align-items: center; /* Center horizontally */
+  background: linear-gradient(135deg, #e0f7fa, #e1bee7); /* Beautiful gradient background */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Clean modern font */
+  color: #333; /* Dark text color */
+  text-align: center; /* Center align all text */
+  padding: 20px; /* Some breathing room on mobile */
+}
+
+/* === Main heading style === */
+.begin-chat-screen h1 {
+  font-size: 2.5rem; /* Large heading */
+  margin-bottom: 10px;
+}
+
+/* === Subtext / description below the heading === */
+.begin-chat-screen p {
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+  color: #555; /* Softer grey for less emphasis */
+}
+
+/* === The big “Begin Chat” button === */
+.start-button {
+  padding: 15px 40px; /* Bigger click area */
+  font-size: 1.2rem; /* Readable on all screens */
+  background-color: #6200ea; /* Deep purple */
+  color: white;
+  border: none;
+  border-radius: 30px; /* Rounded button (pill style) */
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Soft drop shadow */
+  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover effects */
+}
+
+/* === Hover effect for the button === */
+.start-button:hover {
+  background-color: #3700b3; /* Darker purple on hover */
+  transform: scale(1.05); /* Slight zoom effect */
+}
