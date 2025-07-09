@@ -163,3 +163,179 @@
   background-color: #0056b3;
   transform: scale(1.05);
 }
+
+
+/* Add these styles to VoiceChatScreen.css */
+
+.conversation-stage {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.conversation-history {
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+
+.history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.message.user {
+  background: rgba(0, 123, 255, 0.1);
+  flex-direction: row-reverse;
+}
+
+.message.assistant {
+  background: rgba(40, 167, 69, 0.1);
+}
+
+.message-icon {
+  margin: 0 8px;
+  color: #007bff;
+  font-size: 16px;
+}
+
+.message.user .message-icon {
+  color: #28a745;
+}
+
+.message-content {
+  flex: 1;
+}
+
+.message-text {
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #666;
+  opacity: 0.8;
+}
+
+.client-info {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  backdrop-filter: blur(10px);
+}
+
+.client-info h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.info-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.info-grid span {
+  background: rgba(0, 123, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 15px;
+  font-size: 12px;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.mic-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .conversation-history {
+    max-height: 150px;
+  }
+  
+  .message-text {
+    font-size: 13px;
+  }
+  
+  .info-grid span {
+    font-size: 11px;
+  }
+}
+
+
+/* Completion animation styles */
+.completion-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.checkmark {
+  font-size: 48px;
+  animation: bounce 1s ease-in-out;
+}
+
+.completion-text {
+  font-size: 18px;
+  color: #28a745;
+  font-weight: bold;
+  animation: fadeIn 1s ease-in-out;
+}
+
+.mic-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.message.system {
+  background: rgba(40, 167, 69, 0.2);
+  border: 1px solid #28a745;
+}
+
+.message.system .message-icon {
+  color: #28a745;
+}
+
+@keyframes bounce {
+  0%, 20%, 60%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  80% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

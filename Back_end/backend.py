@@ -22,12 +22,11 @@ import uuid
 from datetime import datetime
 import requests
 from openai import AzureOpenAI
+from elevenlabs import ElevenLabs
 
 # ElevenLabs configuration
-ELEVENLABS_API_KEY = "sk_bd836f8e0a8e874a0ab8891a0724e835a67bd14155ef6ac8" 
+ELEVENLABS_API_KEY = "sk_0e1aa08ba33f7aae3651ac26cd6ffb3fbaef8b9ae5decb05" 
 ELEVENLABS_VOICE_ID = "ErXwobaYiN019PkySvjV"  # voice ID 
-
-from elevenlabs import ElevenLabs
 
 # Initialize ElevenLabs client
 elevenlabs_client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
@@ -36,6 +35,18 @@ import warnings
 import multiprocessing
 import subprocess
 warnings.filterwarnings("ignore", category=UserWarning, module="multiprocessing")
+
+
+# Adding a conversation status variable
+class ConversationState:
+    def __init__(self):
+        self.stage = "greeting"  # greeting -> basic_info -> preferences -> property_search -> details -> booking
+        self.client_profile = {}
+        self.conversation_history = []
+        self.last_property_results = None
+# Global state management (can be changed to Redis/database later)
+conversation_sessions = {}  # session_id -> ConversationState
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -86,6 +97,137 @@ AZURE_SPEECH_CONFIG = {
     "subscription": "mSSedelOpALeOCyKP4ssEipRpAkgAZz3v1kTIHBSGnrJqprIo349JQQJ99BGACL93NaXJ3w3AAABACOGf4ui",  
     "region": "australiaeast"    
 }
+
+# ==================== Step 0: Initialize the conversation state ====================
+def gpt_conversation_manager(user_text: str, session_id: str) -> dict:
+    # Get or create conversation state
+    if session_id not in conversation_sessions:
+        conversation_sessions[session_id] = ConversationState()
+    
+    state = conversation_sessions[session_id]
+    state.conversation_history.append({"role": "user", "content": user_text})
+    
+    # Build GPT prompt
+    system_prompt = f"""You are a professional real estate AI assistant. Current conversation stage: {state.stage}
+
+    Conversation flow:
+    1. greeting - Welcome the user, understand basic needs
+    2. basic_info - Collect name, phone, search intent
+    3. preferences - Collect budget, property type, location preferences  
+    4. confirmation - Confirm all collected information before searching
+    5. property_search - Ask for specific property address and search
+    6. property_details - Present property information and ask about viewing interest
+    7. booking - Ask for booking a viewing appointment(Provide two choices: 1. Wednesday 10:00 AM, 2. Thursday 10:00 AM)
+    8. complete - Conversation completed successfully
+
+    Current client information: {json.dumps(state.client_profile, ensure_ascii=False)}
+
+    CRITICAL: CONFIRMATION TO PROPERTY_SEARCH TRANSITION
+    If current stage is "confirmation" and user confirms the information (says "Yes", "That's correct", "Yes, it is", etc.):
+    1. Move to "property_search" stage
+    2. Set "needs_property_search": true
+    3. MUST extract address from client profile "location_preferences" and put it in "address" field
+4. Response should be: "Great! I'll search for available apartments at [address] within your budget. Please hold on for a moment."
+
+EXAMPLE for confirmation stage:
+If client_profile has: "location_preferences": "442 Elizabeth Street"
+Then extracted_info must include: "address": "Elizabeth Street"
+
+PROPERTY SEARCH STAGE REQUIREMENTS:
+- ALWAYS set "needs_property_search": true when transitioning from confirmation
+- ALWAYS extract address from client profile if available
+- If client said "442 Elizabeth Street", set "address": "442 Elizabeth Street"
+- Backend will search database and return results automatically
+
+STAGE TRANSITION RULES:
+- greeting → basic_info: When user responds to greeting
+- basic_info → preferences: When you have name and phone
+- preferences → confirmation: When you have budget, location, and property type
+- confirmation → property_search: When user confirms information (MUST set needs_property_search: true)
+- property_search → property_details: When property information is found and presented
+- property_details → booking: When user expresses interest in viewing
+- booking → complete: When viewing appointment is confirmed
+
+CRITICAL: PROPERTY_DETAILS TO BOOKING TRANSITION
+If current stage is "property_details" and user says any of these:
+- "That would be great"
+- "Do you have any choices for inspection?"
+- "Yes, I'm interested"
+- "I'd like to schedule a viewing"
+- "When can I see it?"
+- Any positive response about viewing
+Then: Move to "booking" stage and offer viewing times.
+
+BOOKING STAGE REQUIREMENTS:
+- Offer exactly two choices: "Wednesday 10:00 AM" and "Thursday 10:00 AM"
+- Ask user to choose one
+- Once confirmed, move to complete stage
+
+Please analyze the user's input and return JSON format:
+{{
+  "extracted_info": {{
+    "name": "customer name or null",
+    "phone": "phone number or null", 
+    "budget_range": "weekly rent budget or null",
+    "property_type": "apartment/house/studio or null",
+    "bedrooms": "number of bedrooms or null",
+    "location_preferences": "preferred locations or null",
+    "search_intent": "buying/renting/investing or null",
+    "must_have_features": ["feature1", "feature2"] or null,
+    "viewing_time": "confirmed appointment time or null",
+    "address": "specific property address or null"
+  }},
+  "next_stage": "next stage",
+  "action": "continue_conversation|search_property|complete_conversation",
+  "response": "response to the user",
+  "needs_property_search": true/false,
+  "conversation_complete": true/false
+}}
+
+IMPORTANT: When user confirms in confirmation stage, you MUST:
+1. Set "next_stage": "property_search"
+2. Set "needs_property_search": true
+3. Extract address from client profile and put in "address" field
+4. This will trigger database search and return results automatically
+
+CRITICAL: In property_details stage, clearly present property information and ask about viewing interest.
+"""
+
+    # Call GPT
+    response = openai_client.chat.completions.create(
+        model="gpt4o_voicebot",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Conversation history: {state.conversation_history[-3:]}\\n\\nUser's latest input: {user_text}"}
+        ],
+        temperature=0.2
+    )
+    
+    # Parse GPT response
+    try:
+        gpt_analysis = json.loads(response.choices[0].message.content)
+        
+        # Update client information
+        extracted_info = gpt_analysis.get("extracted_info", {})
+        state.client_profile.update({k: v for k, v in extracted_info.items() if v})
+        
+        # Update conversation stage
+        state.stage = gpt_analysis.get("next_stage", state.stage)
+        
+        # Add AI response to history
+        ai_response = gpt_analysis.get("response", "")
+        state.conversation_history.append({"role": "assistant", "content": ai_response})
+        
+        return gpt_analysis
+        
+    except json.JSONDecodeError:
+        return {
+            "action": "continue_conversation",
+            "response": "Please tell me your needs, I will help you find a suitable property.",
+            "needs_property_search": False,
+            "conversation_complete": False
+        }
+
 
 # ==================== Step 1: Recieve the front end audio file ====================
 def save_uploaded_audio(file: UploadFile) -> str:
@@ -221,109 +363,7 @@ def speech_to_text(audio_path):
         return result
 
 
-# ==================== Step 3: Text Extraction -> Azure OpenAI ====================
-def extract_info(text: str) -> Dict[str, Any]:
-    # Enhanced prompt to extract more detailed information
-    prompt = (
-        "Extract detailed client information from the real estate conversation below. "
-        "Return ONLY a JSON object with the following structure:\n"
-        "{\n"
-        "  \"name\": \"client name\",\n"
-        "  \"phone\": \"phone number\",\n"
-        "  \"address\": \"specific property address if mentioned\",\n"
-        "  \"preferences\": {\n"
-        "    \"budget_range\": \"weekly rent budget (e.g., $400-600)\",\n"
-        "    \"property_type\": \"apartment/house/studio\",\n"
-        "    \"bedrooms\": \"number of bedrooms needed\",\n"
-        "    \"location_preferences\": \"near transport/schools/hospitals/shops\",\n"
-        "    \"must_have_features\": [\"parking\", \"balcony\", \"gym\", \"pool\"]\n"
-        "  },\n"
-        "  \"search_intent\": \"buying/renting/investing\"\n"
-        "}\n"
-        f"Text: {text}\n"
-        "If any field is not mentioned, use null. Focus on extracting all relevant preferences."
-    )
-    
-    response = openai_client.chat.completions.create(
-        model="gpt4o_voicebot",  
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
-    
-    content = response.choices[0].message.content  
-    logger.info(f"OpenAI response content: {content}")
-    
-    # Check if content is empty
-    if not content or content.strip() == "":
-        logger.error("OpenAI returned empty content")
-        return extract_basic_info(text)
-    
-    # Check if content looks like JSON
-    if content.startswith('{') and content.endswith('}'):
-        info = json.loads(content)
-        logger.info(f"Enhanced client information: {info}")
-        return info
-    else:
-        logger.error(f"Invalid JSON format: {content}")
-        return extract_basic_info(text)
-
-# Back up function when OpenAI fails
-def extract_basic_info(text: str) -> Dict[str, Any]:
-    """Extract basic information when OpenAI fails"""
-    info = {
-        "name": None,
-        "phone": None,
-        "address": None,
-        "preferences": {},
-    }
-    
-    # Extract name (multiple patterns)
-
-    name_patterns = [
-        r'my name is (\w+)',
-        r"my name's (\w+)", 
-        r"i'm (\w+)",
-        r"i am (\w+)",
-        r"call me (\w+)",
-        r"this is (\w+)",
-        r"my name (\w+)",
-        r"i'm (\w+)",
-        r"i am (\w+)",
-        r"This is (\w+)",
-        r"This is calling from (\w+)"
-    ]
-    for pattern in name_patterns:
-        name_match = re.search(pattern, text, re.IGNORECASE)
-        if name_match:
-            info["name"] = name_match.group(1)
-            break
-
-    # Extract phone number - handle Australian mobile numbers (0400-0499)
-    # Pattern for "0402 66286" or "0402-66286" or "040266286"
-    phone_patterns = [
-        r'(\d{4}[-\s]?\d{6})',  # 0402 662860 format
-        r'(\d{4}[-\s]?\d{3}[-\s]?\d{3})',  # Standard 10-digit format
-        r'(\d{4}[-\s]?\d{4}[-\s]?\d{2})',  # Alternative format
-    ]
-    
-    for pattern in phone_patterns:
-        phone_match = re.search(pattern, text)
-        if phone_match:
-            phone = phone_match.group(1).replace(' ', '').replace('-', '')
-            # Validate it's a reasonable phone number length
-            if len(phone) >= 8 and len(phone) <= 12:
-                info["phone"] = phone
-                break
-    
-    # Extract address
-    address_match = re.search(r'(\d+\s+\w+\s+Street)', text, re.IGNORECASE)
-    if address_match:
-        info["address"] = address_match.group(1)
-    
-    logger.info(f"Basic info extracted: {info}")
-    return info
-
-# ==================== Step 4: Connect and search the property information in our SQL online database ====================
+# ==================== Step 3: Connect and search the property information in our SQL online database ====================
 def query_property_azure(address: str) -> Any:
     """In the Azure SQL database, search the property information"""
     conn_str = (
@@ -386,7 +426,7 @@ def property_summary(row: Any) -> str:
         f"For more details, please contact AICG team!"
     )
 
-# ==================== Step 5: Text to speech -> ElevenLabs (Primary) / gTTS (Backup) ====================
+# ==================== Step 4: Text to speech -> ElevenLabs (Primary) / gTTS (Backup) ====================
 # TTS 11labs 
 def text_to_speech_elevenlabs(text: str, output_path: str = "result.mp3") -> str:
     """Text to speech using ElevenLabs (primary)"""
@@ -422,9 +462,11 @@ def text_to_speech(text: str, output_path: str = "result.mp3") -> str:
     """Main text to speech function - tries ElevenLabs first, falls back to gTTS"""
     return text_to_speech_elevenlabs(text, output_path)
 
-# ==================== Step 6: Upload the client's information to Azure SQL ====================
-def upload_to_azure_sql(data: Dict[str, Any]) -> bool:
-    """Upload the client's information to the Azure SQL database"""
+# ==================== Step 5: Upload the client's information to Azure SQL ====================
+def upload_to_azure_sql(data: Dict[str, Any], recommended_property: str = None) -> bool:
+    """Upload complete client information to Azure SQL database"""
+    
+    # Database connection
     conn_str = (
         f"DRIVER={{{AZURE_SQL_CONFIG['driver']}}};"
         f"SERVER={AZURE_SQL_CONFIG['server']};"
@@ -439,69 +481,251 @@ def upload_to_azure_sql(data: Dict[str, Any]) -> bool:
     conn = pyodbc.connect(conn_str)
     cursor = conn.cursor()
     
-    cursor.execute(
-        "INSERT INTO Customer_Table (name, phone, address) VALUES (?, ?, ?)",
-        data.get("name", ""), data.get("phone", ""), data.get("address", "")
-    )
+    # Enhanced data extraction with proper field mapping
+    customer_name = data.get("name", "not given")
+    phone_number = data.get("phone", "not given")
+    budget_range = data.get("budget_range", "not given")
+    property_type = data.get("property_type", "not given") 
+    location_preferences = data.get("location_preferences", "not given")
+    search_intent = data.get("search_intent", "not given")
+    recommended_property_address = recommended_property if recommended_property else "not given"
+    viewing_appointment_time = data.get("viewing_time", "not given")
+    
+    # Handle must_have_features list
+    must_have_features = data.get("must_have_features", [])
+    if isinstance(must_have_features, list) and must_have_features:
+        must_have_features = ", ".join(must_have_features)
+    else:
+        must_have_features = "not given"
+    
+    # Handle bedrooms
+    bedrooms = data.get("bedrooms", "not given")
+    if bedrooms:
+        bedrooms_str = f"{bedrooms} bedrooms"
+    else:
+        bedrooms_str = "not given"
+    
+    # Combine location preferences and bedrooms if available
+    if bedrooms_str != "not given" and location_preferences != "not given":
+        location_preferences = f"{location_preferences}, {bedrooms_str}"
+    elif bedrooms_str != "not given":
+        location_preferences = bedrooms_str
+    
+    conversation_stage = data.get("conversation_stage", "not given")
+    conversation_summary = "Multi-round conversation completed"
+    ai_interaction_status = "completed"
+    
+    # Check if customer already exists
+    cursor.execute("SELECT id FROM All_Clients WHERE phone_number = ?", (phone_number,))
+    existing_customer = cursor.fetchone()
+    
+    if existing_customer:
+        # Update existing customer
+        update_query = """
+        UPDATE All_Clients SET 
+            customer_name = ?,
+            budget_range = ?,
+            property_type = ?,
+            location_preferences = ?,
+            search_intent = ?,
+            recommended_property_address = ?,
+            viewing_appointment_time = ?,
+            must_have_features = ?,
+            conversation_stage = ?,
+            conversation_summary = ?,
+            ai_interaction_status = ?,
+            updated_date = GETDATE()
+        WHERE phone_number = ?
+        """
+        cursor.execute(update_query, (
+            customer_name,
+            budget_range,
+            property_type,
+            location_preferences,
+            search_intent,
+            recommended_property_address,
+            viewing_appointment_time,
+            must_have_features,
+            conversation_stage,
+            conversation_summary,
+            ai_interaction_status,
+            phone_number
+        ))
+        logger.info(f"Updated existing customer: {customer_name}")
+    else:
+        # Insert new customer
+        insert_query = """
+        INSERT INTO All_Clients (
+            customer_name,
+            phone_number,
+            budget_range,
+            property_type,
+            location_preferences,
+            search_intent,
+            recommended_property_address,
+            viewing_appointment_time,
+            must_have_features,
+            conversation_stage,
+            conversation_summary,
+            ai_interaction_status,
+            created_date,
+            updated_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), GETDATE())
+        """
+        cursor.execute(insert_query, (
+            customer_name,
+            phone_number,
+            budget_range,
+            property_type,
+            location_preferences,
+            search_intent,
+            recommended_property_address,
+            viewing_appointment_time,
+            must_have_features,
+            conversation_stage,
+            conversation_summary,
+            ai_interaction_status
+        ))
+        logger.info(f"Inserted new customer: {customer_name}")
+    
+    # Commit and close
     conn.commit()
+    cursor.close()
     conn.close()
     
-    logger.info("Client information uploaded successfully")
     return True
+
+# Return the matched property information to the client  
+def integrate_property_info_with_gpt(property_summary: str, state: ConversationState) -> str:
+    prompt = f"""Based on the property information, generate a detailed and engaging response to the customer.
+
+Client information: {json.dumps(state.client_profile, ensure_ascii=False)}
+Conversation stage: {state.stage}
+Property information: {property_summary}
+
+Requirements:
+1. Present the property details in a clear, engaging manner
+2. Include key information: address, price, bedrooms, bathrooms, features
+3. Highlight features that match customer preferences (budget, location, property type)
+4. Use enthusiastic but professional tone
+5. End with: "Would you like to schedule a viewing for this property?"
+6. Make it conversational and natural, but not too long
+
+Example format:
+"I found a great property for you! It's a [bedrooms] bedroom [property_type] located at [address]. The weekly rent is [price], which fits your budget of [budget_range]. 
+
+Key features include: [list main features]
+
+This property is in [location] which matches your preference for [location_preferences]. 
+
+Would you like to schedule a viewing for this property?"
+
+Please return the reply content directly to the customer, do not use JSON format."""
+# Use gpt to get the response
+    response = openai_client.chat.completions.create(
+        model="gpt4o_voicebot",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
+    )
+    
+    return response.choices[0].message.content 
 
 # ==================== Main processing function ====================
 @app.post("/process-audio") 
 async def process_audio(file: UploadFile = File(...)):
-    """Main processing function - integrate all 6 steps"""
-    logger.info("Start processing the audio file...")
+    """GPT-driven multi-turn conversation processing"""
     
-    # Step 1: Receive the front end audio
+    # 1. Audio to text
     audio_path = save_uploaded_audio(file)
-    
-    # Step 2: Audio to text
     text = speech_to_text(audio_path)
     
-    # Step 3: Text information extraction
-    client_info = extract_info(text)
+    # 2. Get session_id (simplified version)
+    session_id = "default_session"
     
-    # Step 4: Database query
-    property_info = ""
-    if client_info.get('address'):
-        result = query_property_azure(client_info['address'])
-        property_info = property_summary(result)
+    # 3. GPT analysis and decision
+    gpt_decision = gpt_conversation_manager(text, session_id)
+    
+    # 4. Initialize variables
+    recommended_property_address = None
+    response_text = ""
+    
+# 5. Check if we need to search for property
+    if gpt_decision.get("needs_property_search") and gpt_decision.get("extracted_info", {}).get("address"):
+    # Query property information
+        address = gpt_decision["extracted_info"]["address"]
+        property_result = query_property_azure(address)
+    
+    # Update conversation state
+        state = conversation_sessions[session_id]
+        state.last_property_results = property_result
+    
+    # Store recommended property address if found
+        if property_result != "Not found":
+            recommended_property_address = property_result[0]  # First column is address
+        
+        # Let GPT generate a reply based on the query result
+            property_summary_text = property_summary(property_result)
+        
+        # Call GPT again to integrate property information
+            final_response = integrate_property_info_with_gpt(property_summary_text, state)
+            response_text = final_response
+        
+        # Automatically transition to property_details stage
+            state.stage = "property_details"
+        else:
+            response_text = "Sorry, I couldn't find information about that property. Could you please provide another address?"
     else:
-        # when the client not provide an address, voice message reply
-        property_info = (
-            f"Hello {client_info.get('name', 'there')}! "
-            "I'm your real estate assistant. Please provide a property address "
-            "so I can help you find the perfect home. "
-            "You can say something like 'I'm looking for a property at 63 La Trobe Street Melbourne'."
-        )
+        # Use GPT's direct response
+        response_text = gpt_decision.get("response", "")
+
     
-    # Step 5: Text to speech
-    # When the property information is not found, voice message reply
-    if not property_info.strip():
-        property_info = "I'm sorry, I couldn't understand your request. Please try again with a property address."
-    audio_response_path = "result.mp3"
-    text_to_speech(property_info, audio_response_path)
+    # 6. Check if conversation is complete
+    conversation_complete = gpt_decision.get("conversation_complete", False)
+    if conversation_complete:
+        # Add a final goodbye message
+        response_text += "\n\nThank you for using our service! Our team will contact you soon regarding your viewing appointment. Have a great day!"
+        
+        # Mark session for cleanup
+        state = conversation_sessions[session_id]
+        state.stage = "complete"
     
-    # Step 6: Upload the client's information to Azure SQL
-    if client_info:
-        upload_to_azure_sql(client_info)
+    # 7. Text to speech
+    text_to_speech(response_text, "result.mp3")
     
-    # Clean the temporary files
+    # 8. Upload complete client information to database
+    state = conversation_sessions[session_id]
+    
+    # Prepare complete client data
+    complete_client_data = state.client_profile.copy()
+    complete_client_data["conversation_stage"] = state.stage
+    
+    # Check if we have essential information before uploading
+    has_name = complete_client_data.get("name")
+    has_phone = complete_client_data.get("phone")
+    
+    if has_name or has_phone:
+        upload_success = upload_to_azure_sql(complete_client_data, recommended_property_address)
+        if upload_success:
+            logger.info("Complete client information uploaded to database")
+        else:
+            logger.error("Failed to upload client information to database")
+    else:
+        logger.info("No essential client information to upload yet")
+    
+    # 9. Clean up temporary files
     if os.path.exists(audio_path):
         os.remove(audio_path)
     
-    logger.info("Audio processing completed")
-    
+    # 10. Return the result
     return {
         "success": True,
         "recognized_text": text,
-        "client_info": client_info,
-        "property_info": property_info,
-        "audio_file": "result.mp3",
-        "audio_url": "/audio/result.mp3"
+        "ai_response": response_text,
+        "conversation_stage": conversation_sessions[session_id].stage,
+        "client_profile": conversation_sessions[session_id].client_profile,
+        "audio_url": "/audio/result.mp3",
+        "conversation_complete": conversation_complete,
+        "recommended_property": recommended_property_address
     }
     
 
@@ -527,7 +751,7 @@ async def health_check():
 @app.get("/welcome-audio")
 async def generate_welcome_audio():
     """Generate welcome audio message"""
-    welcome_text = "Hi, I am your Real Estate AI assistant from AI consulting Group. If you provide your property preferences, I will help you recommend the most proper one for you?"
+    welcome_text = "Hi, I am your Real Estate AI assistant from AI consulting Group. I am willing to help you to find the best property. Can I get your name please?"
     
     # Generate audio file
     audio_path = "welcome.mp3"

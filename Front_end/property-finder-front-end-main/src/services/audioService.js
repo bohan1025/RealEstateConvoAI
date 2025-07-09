@@ -91,3 +91,33 @@ export async function playAudioFromUrl(audioUrl) {
   });
 }
 
+// Get and play welcome audio from backend
+export async function playWelcomeAudio() {
+  try {
+    console.log("🎵 Fetching welcome audio...");
+    
+    const response = await fetch('http://localhost:8000/welcome-audio', {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      console.error("❌ Failed to get welcome audio, status:", response.status);
+      throw new Error(`Backend error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("✅ Welcome audio response:", result);
+
+    if (result.success && result.audio_url) {
+      console.log("🎵 Playing welcome audio...");
+      await playAudioFromUrl(`http://localhost:8000${result.audio_url}`);
+      console.log("✅ Welcome audio playback completed");
+    }
+
+    return result;
+  } catch (error) {
+    console.error("❌ Failed to play welcome audio:", error);
+    throw error;
+  }
+}
+
