@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './VoiceChatScreen.css';
+
 import {
   startRecording,
   stopRecording,
@@ -12,6 +13,7 @@ import { FaMicrophone, FaStop, FaUser, FaRobot } from 'react-icons/fa';
 function VoiceChatScreen({ onEndChat }) {
   // Basic recording states
   const [recorder, setRecorder] = useState(null);
+  const welcomePlayedRef = useRef(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isBotReplying, setIsBotReplying] = useState(false);
   const [isBotSpeaking, setIsBotSpeaking] = useState(false);
@@ -37,23 +39,26 @@ function VoiceChatScreen({ onEndChat }) {
 
   // Play welcome audio when component mounts
   useEffect(() => {
-    if (hasPlayedWelcome) return;
-    
-    const playWelcome = async () => {
-      try {
-        setHasPlayedWelcome(true);
-        setIsBotReplying(true);
-        await playWelcomeAudio();
-        setIsBotReplying(false);
-      } catch (error) {
-        setHasPlayedWelcome(false);
-        console.error("Failed to play welcome audio:", error);
-        setIsBotReplying(false);
-      }
-    };
+  const playWelcome = async () => {
+    if (welcomePlayedRef.current) return;
 
-    playWelcome();
-  }, [hasPlayedWelcome]);
+    try {
+      welcomePlayedRef.current = true;
+      setIsBotReplying(true);
+      setIsBotSpeaking(true);
+      await playWelcomeAudio(); // plays once
+      setIsBotSpeaking(false);
+      setIsBotReplying(false);
+    } catch (error) {
+      console.error("Failed to play welcome audio:", error);
+      setIsBotReplying(false);
+      setIsBotSpeaking(false);
+      welcomePlayedRef.current = false; // reset on failure
+    }
+  };
+
+  playWelcome();
+}, []);
 
   const handleStartRecording = async () => {
     if (isConversationComplete) return; // Prevent recording if conversation is complete
@@ -167,7 +172,7 @@ function VoiceChatScreen({ onEndChat }) {
   };
 
   return (
-    <div className={`voice-chat-screen ${isBotReplying ? 'blur-background' : ''}`}>
+    <div className={"voice-chat-screen"}>
       {/* Header with stage indicator */}
       <div className="chat-header">
         <h2>🏘️ Real Estate Voice Assistant</h2>
@@ -184,16 +189,18 @@ function VoiceChatScreen({ onEndChat }) {
           <div className="history-container">
             {conversationHistory.slice(-4).map((msg, index) => (
               <div key={index} className={`message ${msg.role}`}>
-                <div className="message-icon">
-                  {msg.role === 'user' ? <FaUser /> : 
-                   msg.role === 'system' ? '🎉' : <FaRobot />}
-                </div>
+                {msg.role !== 'system' && (
+                  <div className="message-icon">
+                    {msg.role === 'user' ? <FaUser /> : <FaRobot />}
+                  </div>
+                )}
                 <div className="message-content">
                   <div className="message-text">{msg.content}</div>
                   <div className="message-time">{msg.timestamp}</div>
                 </div>
               </div>
             ))}
+
           </div>
         </div>
       )}
@@ -217,10 +224,13 @@ function VoiceChatScreen({ onEndChat }) {
       {/* Main chat container */}
       <div className="chat-container">
         <p className="bot-response">
-          {isBotReplying ? "🤖 Analyzing and responding..." : 
-           isBotSpeaking ? "🎵 Playing response..." : 
-           currentStage === "complete" ? "✅ Conversation completed! Ending chat..." :
-           "🎤 Click microphone to start conversation"}
+          {isBotSpeaking
+            ? "🔊 Playing response..."
+            : isBotReplying
+            ? "🤖 Thinking..."
+            : currentStage === "complete"
+            ? "✅ Conversation completed! Ending chat..."
+            : "🎤 Click microphone to start conversation"}
         </p>
 
         {/* Recording animation */}
@@ -232,15 +242,15 @@ function VoiceChatScreen({ onEndChat }) {
           </div>
         )}
 
-        {/* Speaking animation */}
-        {isBotSpeaking && (
-          <div className="speaking-animation">
-            <span className="bar"></span>
-            <span className="bar"></span>
-            <span className="bar"></span>
-            <span className="bar"></span>
+        {/* Unified circular animation with dynamic color */}
+        {(isBotReplying || isBotSpeaking) && (
+          <div className={`bot-circle-animation ${isBotSpeaking ? 'speaking' : 'thinking'}`}>
+            <div className="pulse-ring"></div>
+            <div className="pulse-ring delay"></div>
           </div>
         )}
+
+
 
         {/* Completion animation */}
         {currentStage === "complete" && (

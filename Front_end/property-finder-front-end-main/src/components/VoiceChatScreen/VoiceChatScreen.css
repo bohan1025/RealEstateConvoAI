@@ -1,19 +1,14 @@
 .voice-chat-screen {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  justify-content: space-between; /* Ensure space between content and footer */
   align-items: center;
-  padding: 2rem;
+  padding: 2rem 1rem;
   background: linear-gradient(135deg, #f3f4f6, #e2e8f0);
-  transition: filter 0.3s ease, opacity 0.3s ease;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.voice-chat-screen.blur-background {
-  filter: blur(2px);
-  opacity: 0.5;
-  pointer-events: none;
-}
 
 .chat-header h2 {
   font-size: 2rem;
@@ -147,7 +142,8 @@
 
 /* 🔚 End Chat */
 .end-chat-button {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
   background-color: #007bff;
   color: white;
   border: none;
@@ -157,7 +153,11 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 6px 16px rgba(0, 123, 255, 0.2);
+  width: 200px;
+  max-width: 90%;
+  text-align: center;
 }
+
 
 .end-chat-button:hover {
   background-color: #0056b3;
@@ -179,64 +179,117 @@
 }
 
 .conversation-history {
-  max-height: 200px;
+  max-height: 280px;
   overflow-y: auto;
-  margin: 15px 0;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  backdrop-filter: blur(10px);
+  margin: 20px 0;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
 }
 
 .history-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
+
 
 .message {
   display: flex;
   align-items: flex-start;
   margin-bottom: 12px;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  max-width: 75%;
+  word-wrap: break-word;
+  animation: fadeInUp 0.3s ease both;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.message {
+  padding: 12px 18px;
+  border-radius: 20px 20px 20px 4px;
+  position: relative;
+  max-width: 70%;
+  word-wrap: break-word;
+  font-size: 14px;
+  animation: floatIn 0.4s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .message.user {
-  background: rgba(0, 123, 255, 0.1);
-  flex-direction: row-reverse;
+  align-self: flex-end;
+  background: radial-gradient(circle at 20% 20%, #72c6ef, #004e92);
+  color: white;
+  border-bottom-right-radius: 4px;
 }
 
 .message.assistant {
-  background: rgba(40, 167, 69, 0.1);
+  align-self: flex-start;
+  background: radial-gradient(circle at 30% 30%, #dbeafe, #60a5fa);
+  color: #0f172a;
+  border-bottom-left-radius: 4px;
+}
+
+.message.system {
+  align-self: center;
+  background: rgba(224, 255, 255, 0.4);
+  color: #1e293b;
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-weight: 500;
+  font-style: italic;
+  text-align: center;
+}
+
+/* Optional: timestamp small */
+.message-time {
+  font-size: 11px;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.message.user .message-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.message.assistant .message-time {
+  color: #334155;
 }
 
 .message-icon {
-  margin: 0 8px;
-  color: #007bff;
+  margin-right: 10px;
   font-size: 16px;
+  color: #38bdf8;
 }
 
 .message.user .message-icon {
-  color: #28a745;
+  color: #e0f2fe;
+  margin-left: 10px;
+  margin-right: 0;
 }
 
-.message-content {
-  flex: 1;
+/* ✨ Water bubble float animation */
+@keyframes floatIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.message-text {
-  font-size: 14px;
-  line-height: 1.4;
-  margin-bottom: 4px;
-  color: #333;
-}
 
-.message-time {
-  font-size: 12px;
-  color: #666;
-  opacity: 0.8;
-}
 
 .client-info {
   background: rgba(255, 255, 255, 0.15);
@@ -338,4 +391,135 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+
+
+/* 🌀 Circular AI Bot Reply Animation */
+.bot-glow-animation {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  height: 80px;
+}
+
+.glow-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #764ba2;
+  position: absolute;
+  animation: pulse-ring 2s infinite ease-in-out;
+  box-shadow: 0 0 8px #764ba2;
+}
+
+.glow-ring.delay {
+  animation-delay: 1s;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+}
+
+
+
+/* Shared ring animation base */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 0.3; }
+  100% { transform: scale(0.8); opacity: 0.8; }
+}
+
+.bot-thinking-animation,
+.bot-speaking-animation {
+  position: relative;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+/* 🟣 Purple rings for thinking */
+.thinking-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #7f5af0;
+  position: absolute;
+  animation: pulse-ring 2s infinite ease-in-out;
+  box-shadow: 0 0 10px #7f5af0;
+}
+
+.thinking-ring.delay {
+  animation-delay: 1s;
+}
+
+/* 🟢 Green rings for speaking */
+.speaking-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #2ecc71;
+  position: absolute;
+  animation: pulse-ring 2s infinite ease-in-out;
+  box-shadow: 0 0 10px #2ecc71;
+}
+
+.speaking-ring.delay {
+  animation-delay: 1s;
+}
+/* Shared structure for both bot states */
+.bot-circle-animation {
+  position: relative;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.pulse-ring {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  position: absolute;
+  animation: pulse-ring 2s infinite ease-in-out;
+}
+
+/* Animation for both rings */
+.pulse-ring.delay {
+  animation-delay: 1s;
+}
+
+/* Speaking style (green) */
+.bot-circle-animation.speaking .pulse-ring {
+  border-color: #2ecc71;
+  box-shadow: 0 0 10px #2ecc71;
+}
+
+/* Thinking style (purple) */
+.bot-circle-animation.thinking .pulse-ring {
+  border-color: #7f5af0;
+  box-shadow: 0 0 10px #7f5af0;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 0.3; }
+  100% { transform: scale(0.8); opacity: 0.8; }
 }
